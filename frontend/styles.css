@@ -96,6 +96,20 @@ input {
   gap: 0.8rem;
 }
 
+.upload-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: end;
+}
+
+.upload-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--muted);
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+}
+
 input {
   width: 100%;
   padding: 1rem 1.1rem;
@@ -103,6 +117,10 @@ input {
   border: 1px solid var(--line);
   font-size: 1rem;
   background: rgba(255, 255, 255, 0.7);
+}
+
+input[type="file"] {
+  padding: 0.85rem;
 }
 
 .actions {
@@ -205,6 +223,10 @@ pre {
   }
 
   .controls {
+    grid-template-columns: 1fr;
+  }
+
+  .upload-controls {
     grid-template-columns: 1fr;
   }
 

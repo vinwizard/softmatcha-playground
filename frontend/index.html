@@ -33,7 +33,19 @@
         <p class="helper">Results show the same schema in mock and SoftMatcha modes.</p>
       </section>
 
+      <section class="panel">
+        <form id="upload-form" class="upload-controls">
+          <div>
+            <label class="upload-label" for="corpus-file">Corpus txt file</label>
+            <input id="corpus-file" name="file" type="file" accept=".txt,text/plain" />
+          </div>
+          <button type="submit">Upload Corpus</button>
+        </form>
+        <p class="helper">Upload a plain `.txt` corpus. In `softmatcha` mode this also rebuilds the configured index.</p>
+      </section>
+
       <section id="status" class="status" aria-live="polite"></section>
+      <section id="upload-status" class="status" aria-live="polite"></section>
       <section id="results" class="results"></section>
       <section id="raw-output" class="raw-output hidden">
         <details>
