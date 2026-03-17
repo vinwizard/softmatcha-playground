@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SoftMatcha Playground</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <p class="eyebrow">SoftMatcha Playground</p>
+        <h1>Search the wrapper API without touching the core install.</h1>
+        <p class="subtitle">
+          Build against the stable JSON contract locally with mocks, then point the same app at the real
+          SoftMatcha CLI on GCP.
+        </p>
+        <div class="backend-pill">
+          Backend mode:
+          <strong id="backend-mode">loading</strong>
+        </div>
+      </section>
+
+      <section class="panel">
+        <form id="search-form" class="controls">
+          <label class="sr-only" for="query-input">Query</label>
+          <input id="query-input" name="q" type="text" placeholder="Try: capital of France" autocomplete="off" />
+          <div class="actions">
+            <button type="submit" data-mode="search">Search</button>
+            <button type="button" data-mode="exact" id="exact-button">Exact</button>
+          </div>
+        </form>
+        <p class="helper">Results show the same schema in mock and SoftMatcha modes.</p>
+      </section>
+
+      <section id="status" class="status" aria-live="polite"></section>
+      <section id="results" class="results"></section>
+      <section id="raw-output" class="raw-output hidden">
+        <details>
+          <summary>Raw backend output</summary>
+          <pre id="raw-output-text"></pre>
+        </details>
+      </section>
+    </main>
+
+    <template id="result-template">
+      <article class="card">
+        <div class="card-top">
+          <span class="badge match-type"></span>
+          <span class="badge score"></span>
+        </div>
+        <p class="text"></p>
+        <div class="meta">
+          <span class="source"></span>
+          <span class="rank"></span>
+        </div>
+      </article>
+    </template>
+
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
