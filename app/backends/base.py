@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 
-from app.models import SearchResponse
+from app.models import CorpusUploadResponse, SearchResponse
 
 
 class BackendExecutionError(RuntimeError):
@@ -18,4 +19,8 @@ class SearchBackend(ABC):
 
     @abstractmethod
     def exact(self, query: str) -> SearchResponse:
+        raise NotImplementedError
+
+    @abstractmethod
+    def upload_corpus(self, filename: str, temp_path: Path) -> CorpusUploadResponse:
         raise NotImplementedError

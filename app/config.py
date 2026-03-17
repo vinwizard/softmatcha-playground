@@ -14,11 +14,14 @@ VALID_BACKEND_MODES = {"mock", "softmatcha"}
 
 @dataclass(frozen=True)
 class Settings:
+    base_dir: Path
     backend_mode: str
     host: str
     port: int
+    corpus_storage_dir: Path
     softmatcha_project_dir: Path
     softmatcha_index_dir: str
+    softmatcha_index_build_cmd: str
     softmatcha_search_cmd: str
     softmatcha_exact_cmd: str
     softmatcha_index_flag: str
@@ -42,12 +45,17 @@ def get_settings() -> Settings:
         allowed = ", ".join(sorted(VALID_BACKEND_MODES))
         raise ValueError(f"Invalid BACKEND_MODE={backend_mode!r}. Expected one of: {allowed}")
 
+    base_dir = Path(__file__).resolve().parent.parent
+
     return Settings(
+        base_dir=base_dir,
         backend_mode=backend_mode,
         host=_get_env("HOST", "127.0.0.1"),
         port=int(_get_env("PORT", "8000")),
+        corpus_storage_dir=_expand_path(_get_env("CORPUS_STORAGE_DIR", str(base_dir / "data" / "corpora"))),
         softmatcha_project_dir=_expand_path(_get_env("SOFTMATCHA_PROJECT_DIR", "~/softmatcha2")),
         softmatcha_index_dir=_get_env("SOFTMATCHA_INDEX_DIR", "corpus_index"),
+        softmatcha_index_build_cmd=_get_env("SOFTMATCHA_INDEX_BUILD_CMD", "uv run softmatcha-index"),
         softmatcha_search_cmd=_get_env("SOFTMATCHA_SEARCH_CMD", "uv run softmatcha-search"),
         softmatcha_exact_cmd=_get_env("SOFTMATCHA_EXACT_CMD", "uv run softmatcha-exact"),
         softmatcha_index_flag=_get_env("SOFTMATCHA_INDEX_FLAG", "--index"),

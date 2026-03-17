@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
+import shutil
 
 from app.backends.base import SearchBackend
-from app.models import MatchItem, SearchResponse
+from app.models import CorpusUploadResponse, MatchItem, SearchResponse
 
 
 @dataclass(frozen=True)
@@ -28,6 +30,7 @@ class MockSearchBackend(SearchBackend):
 
     def __init__(self, settings) -> None:
         self._result_limit = max(1, settings.mock_result_count)
+        self._corpus_storage_dir = settings.corpus_storage_dir
 
     def search(self, query: str) -> SearchResponse:
         ranked = self._rank_documents(query)
@@ -47,7 +50,7 @@ class MockSearchBackend(SearchBackend):
     def exact(self, query: str) -> SearchResponse:
         normalized = query.casefold()
         matches: list[MatchItem] = []
-        for document in MOCK_CORPUS:
+        for document in self._get_corpus():
             position = document.text.casefold().find(normalized)
             if position < 0:
                 continue
@@ -73,13 +76,28 @@ class MockSearchBackend(SearchBackend):
 
         return SearchResponse(query=query, backend=self.backend_name, matches=matches, raw_output=None)
 
+    def upload_corpus(self, filename: str, temp_path: Path) -> CorpusUploadResponse:
+        self._corpus_storage_dir.mkdir(parents=True, exist_ok=True)
+        target_path = self._corpus_storage_dir / "uploaded_corpus.txt"
+        shutil.copyfile(temp_path, target_path)
+        corpus_size = len(self._load_uploaded_corpus(target_path))
+        return CorpusUploadResponse(
+            status="ok",
+            backend=self.backend_name,
+            filename=filename,
+            corpus_path=str(target_path),
+            index_path=None,
+            message=f"Uploaded txt corpus for mock mode with {corpus_size} searchable lines.",
+            raw_output=None,
+        )
+
     def _rank_documents(self, query: str) -> list[tuple[MockDocument, float]]:
         query_terms = {token for token in query.casefold().split() if token}
         if not query_terms:
             return []
 
         ranked: list[tuple[MockDocument, float]] = []
-        for document in MOCK_CORPUS:
+        for document in self._get_corpus():
             doc_terms = set(document.text.casefold().replace("?", "").replace(".", "").split())
             overlap = len(query_terms & doc_terms)
             if overlap == 0:
@@ -91,3 +109,20 @@ class MockSearchBackend(SearchBackend):
 
         ranked.sort(key=lambda item: (-item[1], item[0].id))
         return ranked
+
+    def _get_corpus(self) -> tuple[MockDocument, ...]:
+        uploaded = self._load_uploaded_corpus(self._corpus_storage_dir / "uploaded_corpus.txt")
+        return uploaded or MOCK_CORPUS
+
+    @staticmethod
+    def _load_uploaded_corpus(path: Path) -> tuple[MockDocument, ...]:
+        if not path.exists():
+            return ()
+
+        documents: list[MockDocument] = []
+        for index, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            line = raw_line.strip()
+            if not line:
+                continue
+            documents.append(MockDocument(f"u{index}", line, path.name))
+        return tuple(documents)

@@ -1,8 +1,11 @@
 const backendModeEl = document.getElementById("backend-mode");
 const formEl = document.getElementById("search-form");
+const uploadFormEl = document.getElementById("upload-form");
+const corpusFileEl = document.getElementById("corpus-file");
 const queryInputEl = document.getElementById("query-input");
 const resultsEl = document.getElementById("results");
 const statusEl = document.getElementById("status");
+const uploadStatusEl = document.getElementById("upload-status");
 const rawOutputSectionEl = document.getElementById("raw-output");
 const rawOutputTextEl = document.getElementById("raw-output-text");
 const resultTemplateEl = document.getElementById("result-template");
@@ -27,6 +30,11 @@ async function loadHealth() {
 function setStatus(message, kind = "info") {
   statusEl.textContent = message;
   statusEl.className = `status ${kind}`;
+}
+
+function setUploadStatus(message, kind = "info") {
+  uploadStatusEl.textContent = message;
+  uploadStatusEl.className = `status ${kind}`;
 }
 
 function clearResults() {
@@ -87,6 +95,42 @@ async function runQuery(mode) {
 formEl.addEventListener("submit", (event) => {
   event.preventDefault();
   runQuery(currentMode);
+});
+
+uploadFormEl.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const file = corpusFileEl.files[0];
+  if (!file) {
+    setUploadStatus("Choose a .txt file first.", "error");
+    return;
+  }
+
+  if (!file.name.toLowerCase().endsWith(".txt")) {
+    setUploadStatus("Only .txt uploads are supported.", "error");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+  setUploadStatus("Uploading corpus...", "info");
+
+  try {
+    const response = await fetch("/corpus/upload", {
+      method: "POST",
+      body: formData,
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.detail || "Upload failed");
+    }
+    setUploadStatus(payload.message, "success");
+    if (payload.raw_output) {
+      rawOutputTextEl.textContent = payload.raw_output;
+      rawOutputSectionEl.classList.remove("hidden");
+    }
+  } catch (error) {
+    setUploadStatus(error.message, "error");
+  }
 });
 
 exactButtonEl.addEventListener("click", () => {

@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+import tempfile
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.backends.base import BackendExecutionError
 from app.config import get_backend, get_settings
-from app.models import HealthResponse, SearchResponse
+from app.models import CorpusUploadResponse, HealthResponse, SearchResponse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
@@ -50,3 +51,22 @@ async def search(q: str = Query(..., description="Search query")) -> SearchRespo
 async def exact(q: str = Query(..., description="Exact match query")) -> SearchResponse:
     backend = get_backend()
     return backend.exact(_validate_query(q))
+
+
+@app.post("/corpus/upload", response_model=CorpusUploadResponse)
+async def upload_corpus(file: UploadFile = File(...)) -> CorpusUploadResponse:
+    if not file.filename or not file.filename.lower().endswith(".txt"):
+        raise HTTPException(status_code=400, detail="Only .txt corpus uploads are supported")
+
+    suffix = Path(file.filename).suffix or ".txt"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+        temp_path = Path(temp_file.name)
+        temp_file.write(await file.read())
+
+    try:
+        payload = get_backend().upload_corpus(file.filename, temp_path)
+    finally:
+        temp_path.unlink(missing_ok=True)
+        await file.close()
+
+    return payload

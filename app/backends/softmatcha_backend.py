@@ -3,9 +3,11 @@ from __future__ import annotations
 import re
 import shlex
 import subprocess
+from pathlib import Path
+import shutil
 
 from app.backends.base import BackendExecutionError, SearchBackend
-from app.models import MatchItem, SearchResponse
+from app.models import CorpusUploadResponse, MatchItem, SearchResponse
 
 ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 SEARCH_ROW_RE = re.compile(
@@ -19,7 +21,9 @@ class SoftMatchaSearchBackend(SearchBackend):
 
     def __init__(self, settings) -> None:
         self._project_dir = settings.softmatcha_project_dir
+        self._corpus_storage_dir = settings.corpus_storage_dir
         self._index_dir = settings.softmatcha_index_dir
+        self._index_build_cmd = settings.softmatcha_index_build_cmd
         self._search_cmd = settings.softmatcha_search_cmd
         self._exact_cmd = settings.softmatcha_exact_cmd
         self._index_flag = settings.softmatcha_index_flag
@@ -35,8 +39,30 @@ class SoftMatchaSearchBackend(SearchBackend):
         matches = self._parse_exact_output(stdout)
         return SearchResponse(query=query, backend=self.backend_name, matches=matches, raw_output=stdout)
 
+    def upload_corpus(self, filename: str, temp_path: Path) -> CorpusUploadResponse:
+        self._corpus_storage_dir.mkdir(parents=True, exist_ok=True)
+        target_path = self._corpus_storage_dir / "uploaded_corpus.txt"
+        shutil.copyfile(temp_path, target_path)
+        stdout = self._run_index_build(target_path)
+        return CorpusUploadResponse(
+            status="ok",
+            backend=self.backend_name,
+            filename=filename,
+            corpus_path=str(target_path),
+            index_path=self._index_dir,
+            message="Uploaded txt corpus and rebuilt the SoftMatcha index.",
+            raw_output=stdout,
+        )
+
     def _run_cli(self, base_command: str, query: str) -> str:
         command = shlex.split(base_command) + [self._index_flag, self._index_dir, query]
+        return self._run_command(command)
+
+    def _run_index_build(self, corpus_path: Path) -> str:
+        command = shlex.split(self._index_build_cmd) + [self._index_flag, self._index_dir, str(corpus_path)]
+        return self._run_command(command)
+
+    def _run_command(self, command: list[str]) -> str:
         try:
             completed = subprocess.run(
                 command,

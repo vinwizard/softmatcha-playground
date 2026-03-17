@@ -24,3 +24,13 @@ class SearchResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     backend: str
+
+
+class CorpusUploadResponse(BaseModel):
+    status: str
+    backend: str
+    filename: str
+    corpus_path: str
+    index_path: str | None = None
+    message: str
+    raw_output: str | None = None
