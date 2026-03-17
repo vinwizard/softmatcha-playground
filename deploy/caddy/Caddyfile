@@ -1,0 +1,15 @@
+:80 {
+    encode gzip zstd
+
+    request_body {
+        max_size 100MB
+    }
+
+    reverse_proxy 127.0.0.1:8000 {
+        transport http {
+            read_timeout 300s
+            write_timeout 300s
+            dial_timeout 10s
+        }
+    }
+}

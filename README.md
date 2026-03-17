@@ -2,6 +2,45 @@
 
 Small wrapper app around SoftMatcha 2 with a stable FastAPI contract and a plain HTML frontend.
 
+This repo is intentionally separate from the upstream `softmatcha2` codebase. It owns the wrapper product layer, not the underlying SoftMatcha algorithm implementation.
+
+## Repo Structure
+
+```text
+softmatcha-playground/
+  app/
+    main.py
+    config.py
+    models.py
+    backends/
+      base.py
+      mock_backend.py
+      softmatcha_backend.py
+  frontend/
+    index.html
+    app.js
+    styles.css
+  deploy/
+    nginx/
+    caddy/
+    systemd/
+  data/
+    corpora/
+  requirements.txt
+  README.md
+  AGENTS.md
+  .env.example
+```
+
+## Documentation Rule
+
+This repo keeps two top-level docs in sync:
+
+- `README.md` for usage, setup, deployment, and operator-facing instructions
+- `AGENTS.md` for repo intent, structure, constraints, and maintenance expectations
+
+When behavior, routes, env vars, deployment files, or repo structure change, update both files in the same change.
+
 ## Files
 
 - `app/main.py`: FastAPI app, API routes, static frontend serving, upload handling, and backend error handling.
@@ -13,7 +52,12 @@ Small wrapper app around SoftMatcha 2 with a stable FastAPI contract and a plain
 - `frontend/index.html`: Minimal UI shell.
 - `frontend/app.js`: Client-side request flow and result rendering.
 - `frontend/styles.css`: Visual styling for the frontend.
+- `deploy/nginx/softmatcha-playground.conf`: Nginx reverse proxy with request forwarding to `127.0.0.1:8000`.
+- `deploy/caddy/Caddyfile`: Caddy reverse proxy with request forwarding to `127.0.0.1:8000`.
+- `deploy/systemd/softmatcha-playground.service`: Example `systemd` unit for running the app behind a reverse proxy.
+- `data/corpora/`: runtime storage for uploaded txt corpora.
 - `requirements.txt`: Wrapper app dependencies.
+- `AGENTS.md`: repo-level guidance and maintenance rules.
 - `.env.example`: Suggested environment variables for local and GCP use.
 
 ## Response Contract
@@ -95,6 +139,12 @@ export SOFTMATCHA_INDEX_BUILD_CMD='uv run softmatcha-index'
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
+For a reverse-proxy deployment, bind the app to localhost instead:
+
+```bash
+uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
 If your installed CLI needs a different flag or command form, override:
 
 ```bash
@@ -109,3 +159,56 @@ export SOFTMATCHA_EXACT_CMD='uv run softmatcha-exact'
 - `POST /corpus/upload` accepts a single `.txt` file
 - in `mock` mode, the uploaded file replaces the default mock corpus for search and exact lookup
 - in `softmatcha` mode, the uploaded file is stored and immediately passed to `softmatcha-index` to rebuild `SOFTMATCHA_INDEX_DIR`
+
+## Reverse Proxy
+
+Both provided proxy configs forward all requests to the FastAPI app on `127.0.0.1:8000`, including:
+
+- frontend requests like `GET /`
+- API requests like `GET /search` and `GET /exact`
+- upload requests like `POST /corpus/upload`
+
+### Nginx
+
+Use [`deploy/nginx/softmatcha-playground.conf`](/Users/vinwizard/Documents/Projects/softmatcha-playground/deploy/nginx/softmatcha-playground.conf).
+
+Example install on Debian/GCP:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y nginx
+sudo cp deploy/nginx/softmatcha-playground.conf /etc/nginx/sites-available/softmatcha-playground
+sudo ln -s /etc/nginx/sites-available/softmatcha-playground /etc/nginx/sites-enabled/softmatcha-playground
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### Caddy
+
+Use [`deploy/caddy/Caddyfile`](/Users/vinwizard/Documents/Projects/softmatcha-playground/deploy/caddy/Caddyfile).
+
+Example install:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y caddy
+sudo cp deploy/caddy/Caddyfile /etc/caddy/Caddyfile
+sudo systemctl reload caddy
+```
+
+If you later add a real domain, replace `:80` with your hostname and Caddy can manage HTTPS automatically.
+
+### systemd app service
+
+Use [`deploy/systemd/softmatcha-playground.service`](/Users/vinwizard/Documents/Projects/softmatcha-playground/deploy/systemd/softmatcha-playground.service) as a starting point.
+
+Example:
+
+```bash
+sudo cp deploy/systemd/softmatcha-playground.service /etc/systemd/system/softmatcha-playground.service
+sudo sed -i "s/%i/$USER/g" /etc/systemd/system/softmatcha-playground.service
+sudo systemctl daemon-reload
+sudo systemctl enable softmatcha-playground
+sudo systemctl start softmatcha-playground
+sudo systemctl status softmatcha-playground
+```

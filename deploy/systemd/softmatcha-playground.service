@@ -1,0 +1,25 @@
+[Unit]
+Description=SoftMatcha Playground FastAPI app
+After=network.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/home/%i/softmatcha-playground
+Environment=BACKEND_MODE=softmatcha
+Environment=HOST=127.0.0.1
+Environment=PORT=8000
+Environment=CORPUS_STORAGE_DIR=/home/%i/softmatcha-playground/data/corpora
+Environment=SOFTMATCHA_PROJECT_DIR=/home/%i/softmatcha2
+Environment=SOFTMATCHA_INDEX_DIR=corpus_index
+Environment=SOFTMATCHA_INDEX_BUILD_CMD=uv run softmatcha-index
+Environment=SOFTMATCHA_SEARCH_CMD=uv run softmatcha-search
+Environment=SOFTMATCHA_EXACT_CMD=uv run softmatcha-exact
+Environment=SOFTMATCHA_INDEX_FLAG=--index
+Environment=SOFTMATCHA_COMMAND_TIMEOUT=300
+ExecStart=/home/%i/softmatcha-playground/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
