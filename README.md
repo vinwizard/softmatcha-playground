@@ -187,6 +187,8 @@ sudo systemctl reload nginx
 
 Use [`deploy/caddy/Caddyfile`](/Users/vinwizard/Documents/Projects/softmatcha-playground/deploy/caddy/Caddyfile).
 
+Before deploying it, replace `softmatcha.example.com` in the Caddyfile with your real domain or subdomain.
+
 Example install:
 
 ```bash
@@ -196,7 +198,56 @@ sudo cp deploy/caddy/Caddyfile /etc/caddy/Caddyfile
 sudo systemctl reload caddy
 ```
 
-If you later add a real domain, replace `:80` with your hostname and Caddy can manage HTTPS automatically.
+Once DNS points your domain to the VM, Caddy can provision HTTPS automatically.
+
+## Make It A Website
+
+To expose the app at a real domain instead of a raw VM IP:
+
+1. Buy or choose a domain or subdomain, for example `softmatcha.example.com`
+2. Point DNS `A` record for that host to the GCP VM external IP
+3. Make sure GCP firewall rules allow inbound `80` and `443`
+4. Keep the app running on `127.0.0.1:8000`
+5. Update [`deploy/caddy/Caddyfile`](/Users/vinwizard/Documents/Projects/softmatcha-playground/deploy/caddy/Caddyfile) with your real domain
+6. Copy that file to `/etc/caddy/Caddyfile` on the VM and reload Caddy
+
+Example DNS target lookup from your local machine:
+
+```bash
+gcloud compute instances describe softmatcha-dev \
+  --zone "us-west1-a" \
+  --project "llm-serving-427823" \
+  --format='get(networkInterfaces[0].accessConfigs[0].natIP)'
+```
+
+Example GCP firewall rules:
+
+```bash
+gcloud compute firewall-rules create allow-http \
+  --project "llm-serving-427823" \
+  --allow tcp:80 \
+  --target-tags=http-server
+
+gcloud compute firewall-rules create allow-https \
+  --project "llm-serving-427823" \
+  --allow tcp:443 \
+  --target-tags=https-server
+```
+
+Then add the matching network tags to the VM if needed:
+
+```bash
+gcloud compute instances add-tags softmatcha-dev \
+  --zone "us-west1-a" \
+  --project "llm-serving-427823" \
+  --tags=http-server,https-server
+```
+
+After DNS propagation, your site should load at:
+
+```text
+https://your-domain-or-subdomain
+```
 
 ### systemd app service
 

@@ -71,6 +71,7 @@ softmatcha-playground/
 - uploads in `mock` mode affect the local mock corpus only
 - uploads in `softmatcha` mode store the uploaded txt corpus and rebuild the configured SoftMatcha index
 - reverse proxy configs must forward both frontend traffic and API/upload traffic to the FastAPI app
+- the Caddy config is the preferred website-facing config and should stay domain-ready with a clear placeholder host
 
 ## Documentation Rule
 
@@ -83,6 +84,8 @@ Do not treat one as optional. They should stay aligned:
 
 - `README.md` explains usage and operator-facing setup
 - `AGENTS.md` explains repo intent, structure, constraints, and maintenance rules
+
+When domain, reverse proxy, or public website setup changes, update both docs and the checked-in proxy config together.
 
 ## Preferred Future Additions
 
