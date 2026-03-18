@@ -79,6 +79,7 @@ async function runQuery(mode) {
   }
 
   setStatus(`Running ${mode}...`, "info");
+  console.log("[softmatcha-playground] request", { mode, query, url: `/${mode}?q=${encodeURIComponent(query)}` });
 
   try {
     const response = await fetch(`/${mode}?q=${encodeURIComponent(query)}`);
@@ -135,11 +136,13 @@ uploadFormEl.addEventListener("submit", async (event) => {
 
 exactButtonEl.addEventListener("click", () => {
   currentMode = "exact";
+  console.log("[softmatcha-playground] mode set to exact");
   runQuery("exact");
 });
 
 formEl.querySelector('button[data-mode="search"]').addEventListener("click", () => {
   currentMode = "search";
+  console.log("[softmatcha-playground] mode set to search");
 });
 
 loadHealth();

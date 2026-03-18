@@ -44,6 +44,8 @@ softmatcha-playground/
     nginx/
     caddy/
     systemd/
+  scripts/
+    deploy_gcp.sh
   data/
     corpora/
   requirements.txt
@@ -61,6 +63,8 @@ softmatcha-playground/
   browser UI for search, exact match, status display, and corpus upload
 - `deploy/`
   infrastructure-facing configs for reverse proxies and service management
+- `scripts/`
+  operator helpers such as the VM-side GCP deployment script
 - `data/corpora/`
   runtime upload storage only; generated/runtime content, not source-controlled
 
@@ -72,6 +76,10 @@ softmatcha-playground/
 - uploads in `softmatcha` mode store the uploaded txt corpus and rebuild the configured SoftMatcha index
 - reverse proxy configs must forward both frontend traffic and API/upload traffic to the FastAPI app
 - the Caddy config is the preferred website-facing config and should stay domain-ready with a clear placeholder host
+- the checked-in deploy script should remain aligned with the current VM-side restart flow, Caddy reload flow, and service name
+- `scripts/deploy_gcp.sh` is a VM-side deployment helper
+- request-path and subprocess logging should remain explicit enough to debug whether `/search` or `/exact` was invoked and which SoftMatcha CLI command ran
+- rotating file logging should remain enabled by default, with runtime log files kept out of version control
 
 ## Documentation Rule
 

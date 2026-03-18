@@ -1,4 +1,4 @@
-performativesearch.art, www.performativesearch.art {
+performativesearch.art {
     encode gzip zstd
 
     request_body {

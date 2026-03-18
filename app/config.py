@@ -18,6 +18,10 @@ class Settings:
     backend_mode: str
     host: str
     port: int
+    log_dir: Path
+    log_level: str
+    log_max_bytes: int
+    log_backup_count: int
     corpus_storage_dir: Path
     softmatcha_project_dir: Path
     softmatcha_index_dir: str
@@ -52,6 +56,10 @@ def get_settings() -> Settings:
         backend_mode=backend_mode,
         host=_get_env("HOST", "127.0.0.1"),
         port=int(_get_env("PORT", "8000")),
+        log_dir=_expand_path(_get_env("LOG_DIR", str(base_dir / "logs"))),
+        log_level=_get_env("LOG_LEVEL", "INFO").upper(),
+        log_max_bytes=int(_get_env("LOG_MAX_BYTES", "5242880")),
+        log_backup_count=int(_get_env("LOG_BACKUP_COUNT", "5")),
         corpus_storage_dir=_expand_path(_get_env("CORPUS_STORAGE_DIR", str(base_dir / "data" / "corpora"))),
         softmatcha_project_dir=_expand_path(_get_env("SOFTMATCHA_PROJECT_DIR", "~/softmatcha2")),
         softmatcha_index_dir=_get_env("SOFTMATCHA_INDEX_DIR", "corpus_index"),

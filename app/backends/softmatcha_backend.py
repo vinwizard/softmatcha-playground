@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 import shlex
 import subprocess
@@ -14,6 +15,7 @@ SEARCH_ROW_RE = re.compile(
     r"^\|\s*(?P<rank>\d+)\s*\|\s*(?P<score>\d+(?:\.\d+)?)\s*\|\s*(?P<match_count>[\d,]+)\s*\|\s*(?P<text>.+?)\s*$"
 )
 EXACT_ROW_RE = re.compile(r"^\[(?P<rank>\d+)\]\s*(?P<text>.+?)\s*$")
+logger = logging.getLogger("softmatcha_playground.softmatcha_backend")
 
 
 class SoftMatchaSearchBackend(SearchBackend):
@@ -30,19 +32,24 @@ class SoftMatchaSearchBackend(SearchBackend):
         self._timeout = settings.softmatcha_command_timeout
 
     def search(self, query: str) -> SearchResponse:
+        logger.info("Running soft search; query=%r index=%s", query, self._index_dir)
         stdout = self._run_cli(self._search_cmd, query)
         matches = self._parse_search_output(stdout)
+        logger.info("Soft search parsed %d matches", len(matches))
         return SearchResponse(query=query, backend=self.backend_name, matches=matches, raw_output=stdout)
 
     def exact(self, query: str) -> SearchResponse:
+        logger.info("Running exact search; query=%r index=%s", query, self._index_dir)
         stdout = self._run_cli(self._exact_cmd, query)
         matches = self._parse_exact_output(stdout)
+        logger.info("Exact search parsed %d matches", len(matches))
         return SearchResponse(query=query, backend=self.backend_name, matches=matches, raw_output=stdout)
 
     def upload_corpus(self, filename: str, temp_path: Path) -> CorpusUploadResponse:
         self._corpus_storage_dir.mkdir(parents=True, exist_ok=True)
         target_path = self._corpus_storage_dir / "uploaded_corpus.txt"
         shutil.copyfile(temp_path, target_path)
+        logger.info("Uploaded corpus saved to %s; rebuilding index=%s", target_path, self._index_dir)
         stdout = self._run_index_build(target_path)
         return CorpusUploadResponse(
             status="ok",
@@ -63,6 +70,11 @@ class SoftMatchaSearchBackend(SearchBackend):
         return self._run_command(command)
 
     def _run_command(self, command: list[str]) -> str:
+        logger.info(
+            "Executing SoftMatcha command; cwd=%s command=%s",
+            self._project_dir,
+            shlex.join(command),
+        )
         try:
             completed = subprocess.run(
                 command,
@@ -79,6 +91,12 @@ class SoftMatchaSearchBackend(SearchBackend):
 
         stdout = self._clean_output(completed.stdout)
         stderr = self._clean_output(completed.stderr)
+        logger.info(
+            "SoftMatcha command finished; returncode=%s stdout_lines=%d stderr_lines=%d",
+            completed.returncode,
+            0 if not stdout else len(stdout.splitlines()),
+            0 if not stderr else len(stderr.splitlines()),
+        )
         if completed.returncode != 0:
             detail = stderr or stdout or f"SoftMatcha command exited with status {completed.returncode}"
             raise BackendExecutionError(detail)

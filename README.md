@@ -24,6 +24,8 @@ softmatcha-playground/
     nginx/
     caddy/
     systemd/
+  scripts/
+    deploy_gcp.sh
   data/
     corpora/
   requirements.txt
@@ -55,10 +57,35 @@ When behavior, routes, env vars, deployment files, or repo structure change, upd
 - `deploy/nginx/softmatcha-playground.conf`: Nginx reverse proxy with request forwarding to `127.0.0.1:8000`.
 - `deploy/caddy/Caddyfile`: Caddy reverse proxy with request forwarding to `127.0.0.1:8000`.
 - `deploy/systemd/softmatcha-playground.service`: Example `systemd` unit for running the app behind a reverse proxy.
+- `scripts/deploy_gcp.sh`: VM-side deploy helper that reinstalls dependencies, reloads Caddy, and restarts the app service when present.
 - `data/corpora/`: runtime storage for uploaded txt corpora.
 - `requirements.txt`: Wrapper app dependencies.
 - `AGENTS.md`: repo-level guidance and maintenance rules.
 - `.env.example`: Suggested environment variables for local and GCP use.
+
+## Logging And Debugging
+
+The app now logs:
+
+- which API endpoint was hit
+- which backend mode is active
+- the exact SoftMatcha CLI command being executed in `softmatcha` mode
+- how many matches were parsed from CLI output
+
+Logs go to both:
+
+- the `uvicorn` terminal output
+- `logs/app.log` by default, with rotation enabled
+
+When running `uvicorn`, watch the terminal output or tail the log file to confirm whether `/search` or `/exact` was called and which subprocess command ran.
+
+The frontend also logs the selected mode and request URL in the browser developer console.
+
+Example:
+
+```bash
+tail -f logs/app.log
+```
 
 ## Response Contract
 
@@ -91,6 +118,10 @@ In `softmatcha` mode, `raw_output` contains the cleaned CLI stdout so the outer 
 - `BACKEND_MODE`: `mock` or `softmatcha`
 - `HOST`: bind host for `uvicorn`
 - `PORT`: bind port for `uvicorn`
+- `LOG_DIR`: directory for rotating app logs
+- `LOG_LEVEL`: logging level such as `INFO` or `DEBUG`
+- `LOG_MAX_BYTES`: max size of each log file before rotation
+- `LOG_BACKUP_COUNT`: number of rotated log files to keep
 - `CORPUS_STORAGE_DIR`: where uploaded txt corpora are stored by the wrapper
 - `SOFTMATCHA_PROJECT_DIR`: path to the working SoftMatcha repo on GCP
 - `SOFTMATCHA_INDEX_DIR`: index directory passed to the CLI
@@ -152,6 +183,43 @@ export SOFTMATCHA_INDEX_FLAG=--index
 export CORPUS_STORAGE_DIR=~/softmatcha-playground/data/corpora
 export SOFTMATCHA_SEARCH_CMD='uv run softmatcha-search'
 export SOFTMATCHA_EXACT_CMD='uv run softmatcha-exact'
+```
+
+## Repeat Deployment
+
+From your local machine, sync the latest code first:
+
+```bash
+cd /Users/vinwizard/Documents/Projects
+rsync -avz --exclude '.git' --exclude '.venv' --exclude '__pycache__' --exclude 'data' softmatcha-playground/ softmatcha-dev.us-west1-a.llm-serving-427823:~/softmatcha-playground/
+```
+
+Then on the VM, run the checked-in helper:
+
+```bash
+cd ~/softmatcha-playground
+bash scripts/deploy_gcp.sh
+```
+
+That script is VM-only. It reinstalls dependencies, validates and reloads Caddy, and restarts `softmatcha-playground.service` if it exists.
+
+If you are running `uvicorn` manually instead of `systemd`, restart it after syncing:
+
+```bash
+cd ~/softmatcha-playground
+source .venv/bin/activate
+export BACKEND_MODE=softmatcha
+export HOST=127.0.0.1
+export PORT=8000
+export CORPUS_STORAGE_DIR=~/softmatcha-playground/data/corpora
+export SOFTMATCHA_PROJECT_DIR=~/softmatcha2
+export SOFTMATCHA_INDEX_DIR=corpus_index
+export SOFTMATCHA_INDEX_BUILD_CMD='uv run softmatcha-index'
+export SOFTMATCHA_SEARCH_CMD='uv run softmatcha-search'
+export SOFTMATCHA_EXACT_CMD='uv run softmatcha-exact'
+export SOFTMATCHA_INDEX_FLAG=--index
+export SOFTMATCHA_COMMAND_TIMEOUT=300
+uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 ## Upload And Reindex
