@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SoftMatcha Playground Upload</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="page-orb orb-left"></div>
+    <div class="page-orb orb-right"></div>
+    <main class="page">
+      <section class="hero hero-compact">
+        <div class="topbar">
+          <a class="nav-link" href="/">Search Lab</a>
+          <a class="nav-link is-current" href="/upload">Upload Corpus</a>
+        </div>
+        <p class="eyebrow">softmatcha-playground</p>
+        <h1>Feed the machine a fresh corpus.</h1>
+        <p class="subtitle">
+          Upload a plain text file here. In `softmatcha` mode this page also rebuilds the configured index behind the
+          scenes.
+        </p>
+        <div class="hero-meta">
+          <div class="backend-pill">
+            Backend mode:
+            <strong id="backend-mode">loading</strong>
+          </div>
+          <div class="hero-note">new corpus in, new search space out</div>
+        </div>
+        <div class="hero-grid">
+          <div class="hero-chip">txt only</div>
+          <div class="hero-chip">rebuild index</div>
+          <div class="hero-chip">single source of truth</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <form id="upload-form" class="upload-controls upload-page-form">
+          <div>
+            <label class="upload-label" for="corpus-file">Corpus txt file</label>
+            <input id="corpus-file" name="file" type="file" accept=".txt,text/plain" />
+          </div>
+          <button type="submit">Upload Corpus</button>
+        </form>
+        <p class="helper">Use one `.txt` file per upload. The wrapper stores it, and the GCP backend can rebuild the active SoftMatcha index from it.</p>
+      </section>
+
+      <section id="upload-status" class="status" aria-live="polite"></section>
+      <section id="raw-output" class="raw-output hidden">
+        <details open>
+          <summary>Raw backend output</summary>
+          <pre id="raw-output-text"></pre>
+        </details>
+      </section>
+    </main>
+
+    <script src="/static/upload.js" defer></script>
+  </body>
+</html>

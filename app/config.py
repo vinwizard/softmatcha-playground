@@ -29,6 +29,7 @@ class Settings:
     softmatcha_search_cmd: str
     softmatcha_exact_cmd: str
     softmatcha_index_flag: str
+    softmatcha_search_min_similarity: float
     softmatcha_command_timeout: int
     mock_result_count: int
 
@@ -67,6 +68,7 @@ def get_settings() -> Settings:
         softmatcha_search_cmd=_get_env("SOFTMATCHA_SEARCH_CMD", "uv run softmatcha-search"),
         softmatcha_exact_cmd=_get_env("SOFTMATCHA_EXACT_CMD", "uv run softmatcha-exact"),
         softmatcha_index_flag=_get_env("SOFTMATCHA_INDEX_FLAG", "--index"),
+        softmatcha_search_min_similarity=float(_get_env("SOFTMATCHA_SEARCH_MIN_SIMILARITY", "0.4")),
         softmatcha_command_timeout=int(_get_env("SOFTMATCHA_COMMAND_TIMEOUT", "30")),
         mock_result_count=int(_get_env("MOCK_RESULT_COUNT", "5")),
     )

@@ -1,15 +1,15 @@
 const backendModeEl = document.getElementById("backend-mode");
 const formEl = document.getElementById("search-form");
-const uploadFormEl = document.getElementById("upload-form");
-const corpusFileEl = document.getElementById("corpus-file");
 const queryInputEl = document.getElementById("query-input");
 const resultsEl = document.getElementById("results");
 const statusEl = document.getElementById("status");
-const uploadStatusEl = document.getElementById("upload-status");
 const rawOutputSectionEl = document.getElementById("raw-output");
 const rawOutputTextEl = document.getElementById("raw-output-text");
 const resultTemplateEl = document.getElementById("result-template");
+const searchButtonEl = document.getElementById("search-button");
+const softButtonEl = document.getElementById("soft-button");
 const exactButtonEl = document.getElementById("exact-button");
+const modeButtons = Array.from(document.querySelectorAll(".mode-button"));
 
 let currentMode = "search";
 
@@ -32,15 +32,18 @@ function setStatus(message, kind = "info") {
   statusEl.className = `status ${kind}`;
 }
 
-function setUploadStatus(message, kind = "info") {
-  uploadStatusEl.textContent = message;
-  uploadStatusEl.className = `status ${kind}`;
-}
-
 function clearResults() {
   resultsEl.innerHTML = "";
   rawOutputTextEl.textContent = "";
   rawOutputSectionEl.classList.add("hidden");
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  modeButtons.forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.mode === mode);
+  });
+  console.log("[softmatcha-playground] mode set", mode);
 }
 
 function renderResults(payload) {
@@ -98,51 +101,19 @@ formEl.addEventListener("submit", (event) => {
   runQuery(currentMode);
 });
 
-uploadFormEl.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const file = corpusFileEl.files[0];
-  if (!file) {
-    setUploadStatus("Choose a .txt file first.", "error");
-    return;
-  }
+searchButtonEl.addEventListener("click", () => {
+  setMode("search");
+  runQuery("search");
+});
 
-  if (!file.name.toLowerCase().endsWith(".txt")) {
-    setUploadStatus("Only .txt uploads are supported.", "error");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("file", file);
-  setUploadStatus("Uploading corpus...", "info");
-
-  try {
-    const response = await fetch("/corpus/upload", {
-      method: "POST",
-      body: formData,
-    });
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload.detail || "Upload failed");
-    }
-    setUploadStatus(payload.message, "success");
-    if (payload.raw_output) {
-      rawOutputTextEl.textContent = payload.raw_output;
-      rawOutputSectionEl.classList.remove("hidden");
-    }
-  } catch (error) {
-    setUploadStatus(error.message, "error");
-  }
+softButtonEl.addEventListener("click", () => {
+  setMode("soft");
+  runQuery("soft");
 });
 
 exactButtonEl.addEventListener("click", () => {
-  currentMode = "exact";
-  console.log("[softmatcha-playground] mode set to exact");
+  setMode("exact");
   runQuery("exact");
-});
-
-formEl.querySelector('button[data-mode="search"]').addEventListener("click", () => {
-  currentMode = "search";
-  console.log("[softmatcha-playground] mode set to search");
 });
 
 loadHealth();

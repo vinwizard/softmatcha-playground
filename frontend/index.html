@@ -7,45 +7,48 @@
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
+    <div class="page-orb orb-left"></div>
+    <div class="page-orb orb-right"></div>
     <main class="page">
       <section class="hero">
-        <p class="eyebrow">SoftMatcha Playground</p>
-        <h1>Search the wrapper API without touching the core install.</h1>
+        <div class="topbar">
+          <a class="nav-link is-current" href="/">Search Lab</a>
+          <a class="nav-link" href="/upload">Upload Corpus</a>
+        </div>
+        <p class="eyebrow">softmatcha-playground</p>
+        <h1>Ask the corpus politely, literally, or a little sideways.</h1>
         <p class="subtitle">
-          Build against the stable JSON contract locally with mocks, then point the same app at the real
-          SoftMatcha CLI on GCP.
+          One wrapper, three moods: `search`, `exact`, and `soft`. Prototype locally, then let the real
+          SoftMatcha CLI do the heavy lifting on GCP.
         </p>
-        <div class="backend-pill">
-          Backend mode:
-          <strong id="backend-mode">loading</strong>
+        <div class="hero-meta">
+          <div class="backend-pill">
+            Backend mode:
+            <strong id="backend-mode">loading</strong>
+          </div>
+          <div class="hero-note">fuzzy when useful, literal when it matters</div>
+        </div>
+        <div class="hero-grid">
+          <div class="hero-chip">semantic drift</div>
+          <div class="hero-chip">literal trace</div>
+          <div class="hero-chip">index-backed</div>
         </div>
       </section>
 
       <section class="panel">
         <form id="search-form" class="controls">
           <label class="sr-only" for="query-input">Query</label>
-          <input id="query-input" name="q" type="text" placeholder="Try: capital of France" autocomplete="off" />
-          <div class="actions">
-            <button type="submit" data-mode="search">Search</button>
-            <button type="button" data-mode="exact" id="exact-button">Exact</button>
+          <input id="query-input" name="q" type="text" placeholder="Try: capital of France, 33135, olympics gold medalist" autocomplete="off" />
+          <div class="actions" role="group" aria-label="Search mode">
+            <button type="button" class="mode-button is-active" data-mode="search" id="search-button">Search</button>
+            <button type="button" class="mode-button" data-mode="soft" id="soft-button">Soft</button>
+            <button type="button" class="mode-button" data-mode="exact" id="exact-button">Exact</button>
           </div>
         </form>
-        <p class="helper">Results show the same schema in mock and SoftMatcha modes.</p>
-      </section>
-
-      <section class="panel">
-        <form id="upload-form" class="upload-controls">
-          <div>
-            <label class="upload-label" for="corpus-file">Corpus txt file</label>
-            <input id="corpus-file" name="file" type="file" accept=".txt,text/plain" />
-          </div>
-          <button type="submit">Upload Corpus</button>
-        </form>
-        <p class="helper">Upload a plain `.txt` corpus. In `softmatcha` mode this also rebuilds the configured index.</p>
+        <p class="helper">`search` and `soft` currently use the soft-search backend; `exact` stays literal. The response schema stays stable in every mode.</p>
       </section>
 
       <section id="status" class="status" aria-live="polite"></section>
-      <section id="upload-status" class="status" aria-live="polite"></section>
       <section id="results" class="results"></section>
       <section id="raw-output" class="raw-output hidden">
         <details>

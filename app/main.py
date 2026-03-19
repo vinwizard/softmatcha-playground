@@ -64,6 +64,11 @@ async def index() -> FileResponse:
     return FileResponse(FRONTEND_DIR / "index.html")
 
 
+@app.get("/upload", include_in_schema=False)
+async def upload_page() -> FileResponse:
+    return FileResponse(FRONTEND_DIR / "upload.html")
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
     settings = get_settings()
@@ -76,6 +81,14 @@ async def search(q: str = Query(..., description="Search query")) -> SearchRespo
     backend = get_backend()
     query = _validate_query(q)
     logger.info("Search endpoint hit; backend=%s query=%r", backend.backend_name, query)
+    return backend.search(query)
+
+
+@app.get("/soft", response_model=SearchResponse)
+async def soft(q: str = Query(..., description="Soft search query")) -> SearchResponse:
+    backend = get_backend()
+    query = _validate_query(q)
+    logger.info("Soft endpoint hit; backend=%s query=%r", backend.backend_name, query)
     return backend.search(query)
 
 

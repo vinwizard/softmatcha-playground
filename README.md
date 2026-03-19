@@ -18,7 +18,9 @@ softmatcha-playground/
       softmatcha_backend.py
   frontend/
     index.html
+    upload.html
     app.js
+    upload.js
     styles.css
   deploy/
     nginx/
@@ -51,8 +53,10 @@ When behavior, routes, env vars, deployment files, or repo structure change, upd
 - `app/backends/base.py`: Abstract backend interface and backend execution error type.
 - `app/backends/mock_backend.py`: Deterministic local development backend with fake ranked results.
 - `app/backends/softmatcha_backend.py`: Real backend that shells out to the SoftMatcha CLI and parses text output into the stable response schema.
-- `frontend/index.html`: Minimal UI shell.
-- `frontend/app.js`: Client-side request flow and result rendering.
+- `frontend/index.html`: Search page UI.
+- `frontend/upload.html`: Dedicated corpus upload page UI.
+- `frontend/app.js`: Client-side request flow and result rendering for the search page.
+- `frontend/upload.js`: Client-side upload flow for the upload page.
 - `frontend/styles.css`: Visual styling for the frontend.
 - `deploy/nginx/softmatcha-playground.conf`: Nginx reverse proxy with request forwarding to `127.0.0.1:8000`.
 - `deploy/caddy/Caddyfile`: Caddy reverse proxy with request forwarding to `127.0.0.1:8000`.
@@ -113,6 +117,13 @@ Both `/search` and `/exact` return:
 
 In `softmatcha` mode, `raw_output` contains the cleaned CLI stdout so the outer schema stays stable even if parsing is partial.
 
+`GET /soft?q=...` is also available as an explicit alias for the soft-search path. Today `/search` and `/soft` both route to the same backend search implementation, while `/exact` remains separate.
+
+The UI is now split across two pages:
+
+- `/` for search, soft, and exact query flows
+- `/upload` for corpus upload and reindexing
+
 ## Environment Variables
 
 - `BACKEND_MODE`: `mock` or `softmatcha`
@@ -129,6 +140,7 @@ In `softmatcha` mode, `raw_output` contains the cleaned CLI stdout so the outer 
 - `SOFTMATCHA_SEARCH_CMD`: search command prefix
 - `SOFTMATCHA_EXACT_CMD`: exact command prefix
 - `SOFTMATCHA_INDEX_FLAG`: index flag, defaults to `--index`
+- `SOFTMATCHA_SEARCH_MIN_SIMILARITY`: explicit soft-search similarity threshold, defaults to `0.4`
 - `SOFTMATCHA_COMMAND_TIMEOUT`: subprocess timeout in seconds
 - `MOCK_RESULT_COUNT`: number of fake matches returned in mock mode
 
@@ -146,7 +158,7 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 Then open `http://127.0.0.1:8000`.
 
-The home page also includes a txt-only upload form. In `mock` mode, the uploaded file becomes the active searchable line corpus.
+Use `http://127.0.0.1:8000/upload` for txt corpus uploads. In `mock` mode, the uploaded file becomes the active searchable line corpus.
 
 ## GCP Run Mode
 

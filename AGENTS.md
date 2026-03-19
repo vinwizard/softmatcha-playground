@@ -23,6 +23,7 @@ It does not own or reimplement the SoftMatcha algorithm itself.
 - Prefer environment-variable configuration over hardcoded machine-specific paths
 - Treat `mock` mode and `softmatcha` mode as interchangeable backend providers behind one API contract
 - Keep upload support txt-only unless requirements change
+- keep the UI explicit about user-selectable modes; `/search`, `/soft`, and `/exact` may share implementation internally, but the interface should keep those choices visible
 
 ## Current Structure
 
@@ -38,7 +39,9 @@ softmatcha-playground/
       softmatcha_backend.py
   frontend/
     index.html
+    upload.html
     app.js
+    upload.js
     styles.css
   deploy/
     nginx/
@@ -60,7 +63,7 @@ softmatcha-playground/
 - `app/`
   FastAPI routes, data models, configuration, and backend implementations
 - `frontend/`
-  browser UI for search, exact match, status display, and corpus upload
+  browser UI for search and upload, split across separate pages
 - `deploy/`
   infrastructure-facing configs for reverse proxies and service management
 - `scripts/`
@@ -74,12 +77,14 @@ softmatcha-playground/
 - `softmatcha` mode may shell out to the real CLI using subprocess calls
 - uploads in `mock` mode affect the local mock corpus only
 - uploads in `softmatcha` mode store the uploaded txt corpus and rebuild the configured SoftMatcha index
+- keep upload isolated on its own page rather than mixing search and corpus-management controls in one view
 - reverse proxy configs must forward both frontend traffic and API/upload traffic to the FastAPI app
 - the Caddy config is the preferred website-facing config and should stay domain-ready with a clear placeholder host
 - the checked-in deploy script should remain aligned with the current VM-side restart flow, Caddy reload flow, and service name
 - `scripts/deploy_gcp.sh` is a VM-side deployment helper
 - request-path and subprocess logging should remain explicit enough to debug whether `/search` or `/exact` was invoked and which SoftMatcha CLI command ran
 - rotating file logging should remain enabled by default, with runtime log files kept out of version control
+- soft-search CLI tuning that affects behavior, such as minimum similarity, should be explicit and env-configurable rather than left implicit in CLI defaults
 
 ## Documentation Rule
 

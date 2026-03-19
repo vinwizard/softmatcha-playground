@@ -16,6 +16,7 @@ SEARCH_ROW_RE = re.compile(
 )
 EXACT_ROW_RE = re.compile(r"^\[(?P<rank>\d+)\]\s*(?P<text>.+?)\s*$")
 logger = logging.getLogger("softmatcha_playground.softmatcha_backend")
+MAX_LOG_PREVIEW_CHARS = 4000
 
 
 class SoftMatchaSearchBackend(SearchBackend):
@@ -29,6 +30,7 @@ class SoftMatchaSearchBackend(SearchBackend):
         self._search_cmd = settings.softmatcha_search_cmd
         self._exact_cmd = settings.softmatcha_exact_cmd
         self._index_flag = settings.softmatcha_index_flag
+        self._search_min_similarity = settings.softmatcha_search_min_similarity
         self._timeout = settings.softmatcha_command_timeout
 
     def search(self, query: str) -> SearchResponse:
@@ -62,7 +64,10 @@ class SoftMatchaSearchBackend(SearchBackend):
         )
 
     def _run_cli(self, base_command: str, query: str) -> str:
-        command = shlex.split(base_command) + [self._index_flag, self._index_dir, query]
+        command = shlex.split(base_command)
+        if "softmatcha-search" in base_command:
+            command.extend(["--min_similarity", str(self._search_min_similarity)])
+        command.extend([self._index_flag, self._index_dir, query])
         return self._run_command(command)
 
     def _run_index_build(self, corpus_path: Path) -> str:
@@ -97,6 +102,10 @@ class SoftMatchaSearchBackend(SearchBackend):
             0 if not stdout else len(stdout.splitlines()),
             0 if not stderr else len(stderr.splitlines()),
         )
+        if stdout:
+            logger.info("SoftMatcha stdout preview:\n%s", self._preview_output(stdout))
+        if stderr:
+            logger.warning("SoftMatcha stderr preview:\n%s", self._preview_output(stderr))
         if completed.returncode != 0:
             detail = stderr or stdout or f"SoftMatcha command exited with status {completed.returncode}"
             raise BackendExecutionError(detail)
@@ -105,6 +114,12 @@ class SoftMatchaSearchBackend(SearchBackend):
     @staticmethod
     def _clean_output(output: str) -> str:
         return ANSI_ESCAPE_RE.sub("", output).strip()
+
+    @staticmethod
+    def _preview_output(output: str) -> str:
+        if len(output) <= MAX_LOG_PREVIEW_CHARS:
+            return output
+        return output[:MAX_LOG_PREVIEW_CHARS] + "\n...[truncated]..."
 
     def _parse_search_output(self, stdout: str) -> list[MatchItem]:
         matches: list[MatchItem] = []
@@ -131,6 +146,8 @@ class SoftMatchaSearchBackend(SearchBackend):
                     },
                 )
             )
+        if not matches:
+            logger.warning("Soft search returned no parseable result rows")
         return matches
 
     def _parse_exact_output(self, stdout: str) -> list[MatchItem]:
@@ -162,6 +179,8 @@ class SoftMatchaSearchBackend(SearchBackend):
                 )
             )
             index += 1
+        if not matches:
+            logger.warning("Exact search returned no parseable result rows")
         return matches
 
     @staticmethod
